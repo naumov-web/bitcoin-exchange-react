@@ -4,14 +4,26 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableBody
+  TableBody,
+  Button
 } from "@material-ui/core";
-import { useQuery } from "react-query";
 
 import apisConfig from "../../../config/apis";
 import paginationConfig from "../../../config/pagination";
 
-const buildShowingRows = (originRows, limit, sortBy, sortDirection) => {};
+const buildShowingRows = (originRows, limit, sortBy, sortDirection) => {
+  if (typeof originRows[0] === "undefined") {
+    return [];
+  }
+
+  var result = originRows.slice();
+
+  if (limit) {
+    result = result.slice(0, limit);
+  }
+
+  return result;
+};
 
 const IndexPage = () => {
   // State definitions
@@ -54,11 +66,26 @@ const IndexPage = () => {
         headers: {
           Accept: "application/json"
         }
-      }).then(res => setRows(res.json()));
+      }).then(res => res.json());
+
+    promise().then(data => setRows(data));
   }, []);
+
+  const showingRows = buildShowingRows(rows, limit, sortBy, sortDirection);
 
   return (
     <div className="index-page">
+      {limit && (
+        <div className="show-all-button-row">
+          <Button
+            color="primary"
+            variant="outlined"
+            onClick={() => setLimit(null)}
+          >
+            Показать все
+          </Button>
+        </div>
+      )}
       <Table>
         <TableHead>
           <TableRow>
@@ -70,9 +97,9 @@ const IndexPage = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows && (
+          {showingRows && (
             <>
-              {rows.map(row => (
+              {showingRows.map(row => (
                 <TableRow>
                   {columns.map(column => (
                     <TableCell key={`column-${column.field}`}>
