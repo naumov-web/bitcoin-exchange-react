@@ -7,6 +7,7 @@ import {
   TableBody,
   Button
 } from "@material-ui/core";
+import TableCellSort from "../../TableCellSort";
 
 import apisConfig from "../../../config/apis";
 import paginationConfig from "../../../config/pagination";
@@ -17,6 +18,13 @@ const buildShowingRows = (originRows, limit, sortBy, sortDirection) => {
   }
 
   var result = originRows.slice();
+
+  if (sortBy && sortDirection) {
+    const directionIndex = sortDirection === "asc" ? 1 : -1;
+    result.sort((a, b) =>
+      a[sortBy] > b[sortBy] ? directionIndex : -directionIndex
+    );
+  }
 
   if (limit) {
     result = result.slice(0, limit);
@@ -91,7 +99,15 @@ const IndexPage = () => {
           <TableRow>
             {columns.map(column => (
               <TableCell key={`column-${column.field}`}>
-                {column.headerName}
+                <TableCellSort
+                  {...column}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                  onClick={() => {
+                    setSortBy(column.field);
+                    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                  }}
+                />
               </TableCell>
             ))}
           </TableRow>
