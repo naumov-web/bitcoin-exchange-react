@@ -4,14 +4,34 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableBody
+  TableBody,
+  Button
 } from "@material-ui/core";
-import { useQuery } from "react-query";
+import TableCellSort from "../../TableCellSort";
 
 import apisConfig from "../../../config/apis";
 import paginationConfig from "../../../config/pagination";
 
-const buildShowingRows = (originRows, limit, sortBy, sortDirection) => {};
+const buildShowingRows = (originRows, limit, sortBy, sortDirection) => {
+  if (typeof originRows[0] === "undefined") {
+    return [];
+  }
+
+  var result = originRows.slice();
+
+  if (sortBy && sortDirection) {
+    const directionIndex = sortDirection === "asc" ? 1 : -1;
+    result.sort((a, b) =>
+      a[sortBy] > b[sortBy] ? directionIndex : -directionIndex
+    );
+  }
+
+  if (limit) {
+    result = result.slice(0, limit);
+  }
+
+  return result;
+};
 
 const IndexPage = () => {
   // State definitions
@@ -54,25 +74,48 @@ const IndexPage = () => {
         headers: {
           Accept: "application/json"
         }
-      }).then(res => setRows(res.json()));
+      }).then(res => res.json());
+
+    promise().then(data => setRows(data));
   }, []);
+
+  const showingRows = buildShowingRows(rows, limit, sortBy, sortDirection);
 
   return (
     <div className="index-page">
+      {limit && (
+        <div className="show-all-button-row">
+          <Button
+            color="primary"
+            variant="outlined"
+            onClick={() => setLimit(null)}
+          >
+            Показать все
+          </Button>
+        </div>
+      )}
       <Table>
         <TableHead>
           <TableRow>
             {columns.map(column => (
               <TableCell key={`column-${column.field}`}>
-                {column.headerName}
+                <TableCellSort
+                  {...column}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                  onClick={() => {
+                    setSortBy(column.field);
+                    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                  }}
+                />
               </TableCell>
             ))}
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows && (
+          {showingRows && (
             <>
-              {rows.map(row => (
+              {showingRows.map(row => (
                 <TableRow>
                   {columns.map(column => (
                     <TableCell key={`column-${column.field}`}>
