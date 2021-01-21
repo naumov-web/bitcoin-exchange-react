@@ -8,7 +8,7 @@ const socket_io = require("socket.io");
 // Define start values
 const clients = [];
 var values = [];
-const interval = 1000;
+const interval = 2000;
 const prices_offset_percent = 20;
 
 // ==============================
@@ -19,6 +19,7 @@ const server_listener = (req, resp) => {
     req.on("data", function(data) {
       try {
         values = JSON.parse(data.toString());
+        console.log("Recieved items: " + values.length);
       } catch (e) {}
     });
   }

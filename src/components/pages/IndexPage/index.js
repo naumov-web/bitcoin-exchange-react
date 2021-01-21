@@ -12,6 +12,7 @@ import classnames from "classnames";
 
 // Components
 import TableCellSort from "../../TableCellSort";
+import TableCellValue from "../../TableCellValue";
 
 // Configs
 import apisConfig from "../../../config/apis";
@@ -40,11 +41,13 @@ const buildShowingRows = (originRows, limit, sortBy, sortDirection) => {
 
 const IndexPage = () => {
   // State definitions
-  const [rows, setRows] = useState([]);
+  const [tableState, setTableState] = useState({
+    rows: [],
+    lastChangedSymbol: null
+  });
   const [limit, setLimit] = useState(paginationConfig.defaultShowingItemsCount);
   const [sortBy, setSortBy] = useState(null);
   const [sortDirection, setSortDirection] = useState(null);
-  const [lastChangedSymbol, setLastChangedSymbol] = useState(null);
   var socket = null;
   const columns = [
     {
@@ -74,17 +77,19 @@ const IndexPage = () => {
   ];
 
   const insertToRows = new_value => {
-    const new_rows = rows.slice();
+    const new_rows = tableState.rows.slice();
 
     for (var i = 0, len = new_rows.length; i < len; i++) {
       if (new_rows[i]["symbol"] === new_value["symbol"]) {
         new_rows[i] = new_value;
-        break;
+        setTableState({
+          rows: new_rows,
+          lastChangedSymbol: new_value["symbol"]
+        });
+
+        return;
       }
     }
-
-    setLastChangedSymbol(new_value["symbol"]);
-    setRows(new_rows);
   };
 
   useEffect(() => {
@@ -97,7 +102,10 @@ const IndexPage = () => {
       }).then(res => res.json());
 
     promise().then(data => {
-      setRows(data);
+      setTableState({
+        rows: data,
+        lastChangedSymbol: null
+      });
 
       const initSocketPromise = async () =>
         await fetch(apisConfig.initSocketBaseUrl + "/init", {
@@ -118,7 +126,12 @@ const IndexPage = () => {
     });
   }, []);
 
-  const showingRows = buildShowingRows(rows, limit, sortBy, sortDirection);
+  const showingRows = buildShowingRows(
+    tableState.rows,
+    limit,
+    sortBy,
+    sortDirection
+  );
 
   return (
     <div className="index-page">
@@ -157,13 +170,14 @@ const IndexPage = () => {
               {showingRows.map(row => (
                 <TableRow
                   className={classnames({
-                    "last-updated-row": row["symbol"] === lastChangedSymbol
+                    "last-updated-row":
+                      row["symbol"] === tableState.lastChangedSymbol
                   })}
                   key={`table-row-${row["symbol"]}`}
                 >
                   {columns.map(column => (
                     <TableCell key={`column-${column.field}`}>
-                      {row[column.field]}
+                      <TableCellValue value={row[column.field]} />
                     </TableCell>
                   ))}
                 </TableRow>
