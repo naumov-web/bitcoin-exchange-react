@@ -7,8 +7,13 @@ import {
   TableBody,
   Button
 } from "@material-ui/core";
+import openSocket from "socket.io-client";
+import classnames from "classnames";
+
+// Components
 import TableCellSort from "../../TableCellSort";
 
+// Configs
 import apisConfig from "../../../config/apis";
 import paginationConfig from "../../../config/pagination";
 
@@ -39,7 +44,8 @@ const IndexPage = () => {
   const [limit, setLimit] = useState(paginationConfig.defaultShowingItemsCount);
   const [sortBy, setSortBy] = useState(null);
   const [sortDirection, setSortDirection] = useState(null);
-
+  const [lastChangedSymbol, setLastChangedSymbol] = useState(null);
+  var socket = null;
   const columns = [
     {
       field: "symbol",
@@ -67,6 +73,20 @@ const IndexPage = () => {
     }
   ];
 
+  const insertToRows = new_value => {
+    const new_rows = rows.slice();
+
+    for (var i = 0, len = new_rows.length; i < len; i++) {
+      if (new_rows[i]["symbol"] === new_value["symbol"]) {
+        new_rows[i] = new_value;
+        break;
+      }
+    }
+
+    setLastChangedSymbol(new_value["symbol"]);
+    setRows(new_rows);
+  };
+
   useEffect(() => {
     const promise = async () =>
       await fetch(apisConfig.restBaseUrl + apisConfig.endpoints.getTickers, {
@@ -76,7 +96,26 @@ const IndexPage = () => {
         }
       }).then(res => res.json());
 
-    promise().then(data => setRows(data));
+    promise().then(data => {
+      setRows(data);
+
+      const initSocketPromise = async () =>
+        await fetch(apisConfig.initSocketBaseUrl + "/init", {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+
+      initSocketPromise().then(data => {
+        socket = openSocket(apisConfig.socketUrl);
+        socket.on("ticker", data => {
+          insertToRows(data);
+        });
+      });
+    });
   }, []);
 
   const showingRows = buildShowingRows(rows, limit, sortBy, sortDirection);
@@ -116,7 +155,12 @@ const IndexPage = () => {
           {showingRows && (
             <>
               {showingRows.map(row => (
-                <TableRow>
+                <TableRow
+                  className={classnames({
+                    "last-updated-row": row["symbol"] === lastChangedSymbol
+                  })}
+                  key={`table-row-${row["symbol"]}`}
+                >
                   {columns.map(column => (
                     <TableCell key={`column-${column.field}`}>
                       {row[column.field]}
