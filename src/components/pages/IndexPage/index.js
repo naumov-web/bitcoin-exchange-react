@@ -8,8 +8,12 @@ import {
   Button
 } from "@material-ui/core";
 import openSocket from "socket.io-client";
+import classnames from "classnames";
+
+// Components
 import TableCellSort from "../../TableCellSort";
 
+// Configs
 import apisConfig from "../../../config/apis";
 import paginationConfig from "../../../config/pagination";
 
@@ -40,6 +44,7 @@ const IndexPage = () => {
   const [limit, setLimit] = useState(paginationConfig.defaultShowingItemsCount);
   const [sortBy, setSortBy] = useState(null);
   const [sortDirection, setSortDirection] = useState(null);
+  const [lastChangedSymbol, setLastChangedSymbol] = useState(null);
   var socket = null;
   const columns = [
     {
@@ -78,6 +83,7 @@ const IndexPage = () => {
       }
     }
 
+    setLastChangedSymbol(new_value["symbol"]);
     setRows(new_rows);
   };
 
@@ -149,7 +155,12 @@ const IndexPage = () => {
           {showingRows && (
             <>
               {showingRows.map(row => (
-                <TableRow key={`table-row-${row["symbol"]}`}>
+                <TableRow
+                  className={classnames({
+                    "last-updated-row": row["symbol"] === lastChangedSymbol
+                  })}
+                  key={`table-row-${row["symbol"]}`}
+                >
                   {columns.map(column => (
                     <TableCell key={`column-${column.field}`}>
                       {row[column.field]}
